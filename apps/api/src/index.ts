@@ -8,7 +8,7 @@ const prisma = new PrismaClient(); const app = express();
 const secret = process.env.JWT_SECRET || 'development-only-change-me';
 const allowedOrigins = new Set([process.env.WEB_ORIGIN, 'http://localhost:5173', 'http://127.0.0.1:5173'].filter(Boolean));
 app.use(helmet()); app.use(cors({
-  origin: (origin, callback) => {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     if (!origin || allowedOrigins.has(origin)) return callback(null, true);
     callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
