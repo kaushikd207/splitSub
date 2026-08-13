@@ -6,7 +6,14 @@ import jwt from 'jsonwebtoken'; import argon2 from 'argon2'; import { z } from '
 
 const prisma = new PrismaClient(); const app = express();
 const secret = process.env.JWT_SECRET || 'development-only-change-me';
-app.use(helmet()); app.use(cors({ origin: process.env.WEB_ORIGIN, credentials: true }));
+const allowedOrigins = new Set([process.env.WEB_ORIGIN, 'http://localhost:5173', 'http://127.0.0.1:5173'].filter(Boolean));
+app.use(helmet()); app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
+  credentials: true,
+}));
 app.use('/payments/webhook', express.raw({ type: 'application/json' })); app.use(express.json()); app.use(cookieParser());
 app.use(rateLimit({ windowMs: 15 * 60_000, limit: 200, standardHeaders: true }));
 type AuthRequest = Request & { user?: { id:string; role:string } };

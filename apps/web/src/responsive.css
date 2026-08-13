@@ -1,0 +1,70 @@
+/* Responsive additions - mobile-first */
+
+/* Make header and footer stack on small screens */
+header, footer {
+  padding: 16px 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.brand { font-size: 18px; }
+nav { flex-wrap: wrap; gap: 12px; }
+.nav-actions { width: 100%; justify-content: flex-end; }
+
+/* Grid for cards: fluid, responsive columns */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  padding: 0 18px;
+}
+
+/* Card full width on small screens */
+.group-card { width: 100%; }
+
+/* Form cards and inputs stack and full width */
+.form-card, .auth-card {
+  padding: 18px;
+}
+.form-card label, .auth-card label {
+  display: block;
+  margin-bottom: 12px;
+}
+.form-card input[type="number"], .form-card input[type="text"], .form-card select, .auth-card input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+/* Hero adjustments */
+.hero { margin: 40px auto 28px; padding: 0 18px; }
+.hero h1 { font-size: clamp(32px, 8vw, 56px); }
+.hero>p { font-size: 15px; }
+
+/* Smaller action buttons */
+.button { padding: 10px 14px; }
+.button.small { padding: 8px 10px; }
+
+/* Search and results head spacing */
+.search { padding: 0 18px; display:flex; gap:10px; align-items:center; }
+.search input { flex:1; min-width:0; }
+.results-head { padding: 8px 18px; }
+
+/* Utilities */
+.empty { padding: 18px; text-align: center; }
+.page { padding: 12px 8px; }
+
+/* Larger screens: refine spacing */
+@media (min-width: 700px) {
+  header, footer { padding: 22px 30px; }
+  .hero { margin: 82px auto 68px; }
+  .grid { gap: 26px; padding: 0; }
+  .form-card, .auth-card { padding: 24px; }
+}
+
+@media (min-width: 1024px) {
+  .nav-actions { justify-content: flex-end; width: auto; }
+  nav { gap: 30px; }
+}
