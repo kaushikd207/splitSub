@@ -5,7 +5,31 @@ import axios from 'axios';
 import { ArrowRight, BadgeCheck, CalendarDays, Check, ChevronRight, LockKeyhole, Plus, Search, ShieldCheck, Sparkles, Users } from 'lucide-react';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api', withCredentials: true });
+let RUNTIME_CONFIG: any = null;
+async function loadRuntimeConfigIfNeeded() {
+  if (RUNTIME_CONFIG !== null) return;
+  try {
+    const resp = await fetch('/app-config.json', { cache: 'no-store' });
+    if (resp.ok) RUNTIME_CONFIG = await resp.json();
+    else RUNTIME_CONFIG = {};
+  } catch {
+    RUNTIME_CONFIG = {};
+  }
+}
+
 const STORAGE_KEY = 'splitsub-demo-state-v1';
+
+// On load: fetch runtime config and clear demo seed if a real API URL is present.
+(async () => {
+  try {
+    await loadRuntimeConfigIfNeeded();
+    if (RUNTIME_CONFIG && RUNTIME_CONFIG.VITE_API_URL) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  } catch (e) {
+    // ignore
+  }
+})();
 
 const demoServices = [
   {
@@ -123,7 +147,9 @@ function safeUser(u: any) {
 }
 
 async function apiRequest<T>(path: string, method = 'get', body?: Record<string, unknown>): Promise<T> {
-  const useDemoMode = !import.meta.env.VITE_API_URL;
+  await loadRuntimeConfigIfNeeded();
+  const runtimeUrl = (RUNTIME_CONFIG && RUNTIME_CONFIG.VITE_API_URL) || import.meta.env.VITE_API_URL;
+  const useDemoMode = !runtimeUrl;
 
   const demoFallback = () => {
     const state = getDemoState();
@@ -213,7 +239,8 @@ async function apiRequest<T>(path: string, method = 'get', body?: Record<string,
   }
 
   try {
-    const response = await api.request({ url: path, method, data: body });
+    const base = runtimeUrl || '/api';
+    const response = await axios.request({ baseURL: base, url: path, method, data: body, withCredentials: true });
     return response.data as T;
   } catch (error: any) {
     const status = Number(error?.response?.status || 0);
