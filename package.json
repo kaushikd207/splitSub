@@ -1,0 +1,7 @@
+{
+  "name": "splitsub",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": { "dev": "concurrently \"npm run dev -w @splitsub/api\" \"npm run dev -w @splitsub/web\"", "build": "npm run build --workspaces", "test": "npm run test -w @splitsub/api" },
+  "devDependencies": { "concurrently": "^9.1.2" }
+}

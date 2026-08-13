@@ -1,0 +1,2 @@
+import { describe, expect, it } from 'vitest'; import { pricing } from './pricing.js';
+describe('pricing',()=>{it('snapshots a hybrid fee with each transaction',()=>expect(pricing(800,4,{type:'HYBRID',percentage:2.5,fixed:5})).toEqual({baseShare:200,platformFee:10,memberTotal:210}));it('rejects impossible member counts',()=>expect(()=>pricing(100,1,{type:'FIXED',percentage:0,fixed:1})).toThrow());});

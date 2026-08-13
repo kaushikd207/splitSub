@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  GROUP_OWNER
+  ADMIN
+}
+enum GroupStatus {
+  DRAFT
+  OPEN
+  FULL
+  PAUSED
+  EXPIRED
+  CANCELLED
+}
+enum MembershipStatus {
+  RESERVED
+  PAYMENT_PENDING
+  ACTIVE
+  PAYMENT_FAILED
+  EXPIRED
+  CANCELLED
+  REFUNDED
+  DISPUTED
+}
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+enum FeeType {
+  PERCENTAGE
+  FIXED
+  HYBRID
+}
+
+model User {
+  id String @id @default(cuid())
+  name String
+  email String @unique
+  phone String?
+  avatar String?
+  passwordHash String
+  emailVerified Boolean @default(false)
+  role Role @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  groups SubscriptionGroup[] @relation("OwnerGroups")
+  memberships Membership[]
+  payments Payment[]
+  notifications Notification[]
+  reports Report[] @relation("Reporter")
+  @@index([createdAt])
+}
+
+model SubscriptionService {
+  id String @id @default(cuid())
+  name String @unique
+  slug String @unique
+  logoUrl String?
+  sharingAllowed Boolean @default(false)
+  eligibilityRules String
+  enabled Boolean @default(true)
+  plans SubscriptionPlan[]
+  groups SubscriptionGroup[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SubscriptionPlan {
+  id String @id @default(cuid())
+  serviceId String
+  service SubscriptionService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  name String
+  price Decimal @db.Decimal(10, 2)
+  billingCycle String
+  maxMembers Int
+  enabled Boolean @default(true)
+  groups SubscriptionGroup[]
+  @@index([serviceId, enabled])
+}
+
+model SubscriptionGroup {
+  id String @id @default(cuid())
+  ownerId String
+  owner User @relation("OwnerGroups", fields: [ownerId], references: [id])
+  serviceId String
+  service SubscriptionService @relation(fields: [serviceId], references: [id])
+  planId String
+  plan SubscriptionPlan @relation(fields: [planId], references: [id])
+  totalPrice Decimal @db.Decimal(10, 2)
+  billingCycle String
+  totalMembers Int
+  offeredSlots Int
+  renewalDate DateTime
+  status GroupStatus @default(DRAFT)
+  memberships Membership[]
+  reservations SlotReservation[]
+  payments Payment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status, serviceId])
+  @@index([ownerId])
+}
+
+model Membership {
+  id String @id @default(cuid())
+  groupId String
+  group SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  status MembershipStatus @default(RESERVED)
+  baseShare Decimal @db.Decimal(10, 2)
+  platformFee Decimal @db.Decimal(10, 2)
+  total Decimal @db.Decimal(10, 2)
+  payments Payment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([groupId, userId])
+  @@index([groupId, status])
+}
+
+model SlotReservation {
+  id String @id @default(cuid())
+  groupId String
+  group SubscriptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@unique([groupId, userId])
+  @@index([groupId, expiresAt])
+}
+
+model Payment {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  groupId String
+  group SubscriptionGroup @relation(fields: [groupId], references: [id])
+  membershipId String
+  membership Membership @relation(fields: [membershipId], references: [id])
+  amount Decimal @db.Decimal(10, 2)
+  currency String @default("INR")
+  platformFee Decimal @db.Decimal(10, 2)
+  status PaymentStatus @default(CREATED)
+  provider String
+  providerOrderId String @unique
+  providerPaymentId String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId, status])
+}
+
+model PlatformFeeConfig {
+  id String @id @default(cuid())
+  type FeeType
+  percentage Decimal @default(0) @db.Decimal(5, 2)
+  fixed Decimal @default(0) @db.Decimal(10, 2)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  title String
+  body String
+  readAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Report {
+  id String @id @default(cuid())
+  reporterId String
+  reporter User @relation("Reporter", fields: [reporterId], references: [id])
+  groupId String?
+  reason String
+  details String?
+  status String @default("OPEN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payout {
+  id String @id @default(cuid())
+  groupId String
+  amount Decimal @db.Decimal(10, 2)
+  status String
+  createdAt DateTime @default(now())
+}
+
+model Transaction {
+  id String @id @default(cuid())
+  paymentId String @unique
+  type String
+  amount Decimal @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id String @id @default(cuid())
+  authorId String
+  groupId String
+  rating Int
+  comment String?
+  createdAt DateTime @default(now())
+  @@unique([authorId, groupId])
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+  actorId String?
+  action String
+  entity String
+  entityId String
+  metadata Json?
+  createdAt DateTime @default(now())
+  @@index([entity, entityId])
+}
